@@ -1,0 +1,1264 @@
+set more off
+
+*ASSIGN LOCALS
+	
+	local path1 "\\ads.bris.ac.uk\filestore\BRMS\Studies\ASDoutcomes\Hein\Datasets\British\ALSPAC\ORIGINAL\"
+	local path2 "\\ads.bris.ac.uk\filestore\BRMS\Studies\ASDoutcomes\Hein\Projects\IPV offspring intelligence - ALSPAC\MIperformancetest"
+	local path3 "\\ads.bris.ac.uk\filestore\BRMS\Studies\ASDoutcomes\Hein\Datasets\British\ALSPAC\RECODED\"
+
+*CONSTRUCT DATASET
+
+	use "`path1'Multiple_Pregs_CID_ONLY.dta", clear
+	sort CIDB1007 mz028b
+	gen motherID=multiple
+	gen x=_n+1145
+	replace motherID=x if multiple==.
+	duplicates report motherID
+	duplicates tag motherID, gen(duplicates)
+	tab duplicates
+	drop duplicates
+	rename CIDB1007 Unique
+	sort Unique
+	summ Unique
+	save "`path1'Multiple_Pregs_CID_ONLY_temp.dta", replace
+	
+	use "`path1'Abel_04Mar16.dta", clear
+	rename CIDB1007 Unique
+	duplicates report Unique
+	duplicates drop Unique, force
+	sort Unique
+	summ Unique
+	save "`path1'Abel_04Mar16_temp.dta", replace
+	
+	use "`path1'ALSPAC_9MARCH15.dta", clear
+	rename CIDB1007 Unique
+	sort Unique
+	summ Unique
+	save "`path1'ALSPAC_9MARCH15_temp.dta", replace	
+
+	use "`path1'Abel_03Jun15_v12.dta", clear
+	rename CIDB1007 Unique
+	summ Unique
+	duplicates report Unique
+	duplicates drop Unique, force
+	summ Unique
+	sort Unique
+	save "`path1'Abel_03Jun15_v12_temp.dta", replace
+			
+	use "`path1'ALSPAC_Nov14_temp.dta", clear
+	rename Uniquepregnancyidentifierfor Unique
+	sort Unique
+	summ Unique
+	
+	merge Unique using "`path1'ALSPAC_9MARCH15_temp.dta"
+	tab _merge
+	drop _merge
+	sort Unique
+	summ Unique
+	
+	merge Unique using "`path1'Multiple_Pregs_CID_ONLY_temp.dta"
+	tab _merge
+	drop if _merge==2
+	drop _merge
+	sort Unique
+	summ Unique
+	
+	merge Unique using "`path1'Abel_03Jun15_v12_temp.dta"
+	tab _merge
+	drop if _merge==2
+	drop _merge
+	sort Unique
+	summ Unique
+	
+	merge Unique using "`path1'Abel_04Mar16_temp.dta"
+	tab _merge
+	drop if _merge==2
+	drop _merge
+	sort Unique
+	summ Unique
+	save "`path1'ALSPAC_FINAL.dta", replace
+	
+	set more off
+	
+	rename Unique idno
+	label variable idno "mother-child pair ID"
+	summ idno
+	
+	replace MaternalAgeAtBirth=mz028b if MaternalAgeAtBirth==.
+	replace MaternalAgeAtBirth=mz028b if MaternalAgeAtBirth==-1
+
+*CODE TIMED CRUELTY EXPOSURES - PARTNER TO MOTHER
+		
+	foreach time in 18wkAN 8wk 8mnth 21mnth 30mnth 73mnth {
+		rename ECruelty_`time' PtoM_EC_`time'
+		}
+						
+	rename PtoM_EC_30mnth PtoM_EC_33mnth
+						
+	foreach time in 18wkAN 8wk 8mnth 21mnth 30mnth 73mnth {
+		rename PCruelty_`time' PtoM_PC_`time'
+		}
+						
+	rename PtoM_PC_30mnth PtoM_PC_33mnth
+			
+	label variable PtoM_EC_18wkAN "Emotional C PtoM - start of preg to 18wk gestation"
+	label variable PtoM_EC_8wk "Emotional C PtoM - mid preg to 8wk postnatally"
+	label variable PtoM_EC_8mnth "Emotional C PtoM - birth to 8mnth postnatally"
+	label variable PtoM_EC_21mnth "Emotional C PtoM - 8mnth to 21mnth postnatally"
+	label variable PtoM_EC_33mnth "Emotional C PtoM - 18mnth to 33mnth postnatally"
+	label variable PtoM_EC_73mnth "Emotional C PtoM - 60mnth to 73mnth postnatally"
+				
+	label variable PtoM_PC_18wkAN "Physical C PtoM - start of preg to 18wk gestation"
+	label variable PtoM_PC_8wk "Physical C PtoM - mid preg to 8wk postnatally"
+	label variable PtoM_PC_8mnth "Physical C PtoM - birth to 8mnth postnatally"
+	label variable PtoM_PC_21mnth "Physical C PtoM - 8mnth to 21mnth postnatally"
+	label variable PtoM_PC_33mnth "Physical C PtoM - 18mnth to 33mnth postnatally"
+	label variable PtoM_PC_73mnth "Physical C PtoM - 60mnth to 73mnth postnatally"		
+		
+	gen PtoM_EC_47mnth=.
+	replace PtoM_EC_47mnth=0 if j336==5
+	replace PtoM_EC_47mnth=1 if j336<=4
+	label variable PtoM_EC_47mnth "Emotional C PtoM - 30mnth to 47mnth postnatally"
+	label values PtoM_EC_47mnth PtoM_EC_47mnth 
+	label define PtoM_EC_47mnth 0 "negative" 1 "positive"
+	tab PtoM_EC_47mnth j336
+	tab PtoM_EC_47mnth
+									
+	gen PtoM_PC_47mnth=.
+	replace PtoM_PC_47mnth=0 if j322==5
+	replace PtoM_PC_47mnth=1 if j322<=4
+	label variable PtoM_PC_47mnth "Physical C PtoM - 30mnth to 47mnth postnatally"
+	label values PtoM_PC_47mnth PtoM_PC_47mnth
+	label define PtoM_PC_47mnth 0 "negative" 1 "positive"
+	tab PtoM_PC_47mnth j322
+	tab PtoM_PC_47mnth
+									
+	gen PtoM_EC_61mnth=.
+	replace PtoM_EC_61mnth=0 if k4036==5
+	replace PtoM_EC_61mnth=1 if k4036<=4
+	label variable PtoM_EC_61mnth "Emotional C PtoM - 49mnth to 61mnth postnatally"
+	label values PtoM_EC_61mnth PtoM_EC_61mnth
+	label define PtoM_EC_61mnth 0 "negative" 1 "positive"
+	tab PtoM_EC_61mnth k4036
+	tab PtoM_EC_61mnth
+													
+	gen PtoM_PC_61mnth=.
+	replace PtoM_PC_61mnth=0 if k4022==5
+	replace PtoM_PC_61mnth=1 if k4022<=4
+	label variable PtoM_PC_61mnth "Physical C PtoM - 49mnth to 61mnth postnatally"
+	label values PtoM_PC_61mnth PtoM_PC_61mnth 
+	label define PtoM_PC_61mnth 0 "negative" 1 "positive"
+	tab PtoM_PC_61mnth k4022
+	tab PtoM_PC_61mnth
+	
+	gen PtoM_AnyC_18wkAN=.
+	replace PtoM_AnyC_18wkAN=0 if PtoM_EC_18wkAN==0 & PtoM_PC_18wkAN==0
+	replace PtoM_AnyC_18wkAN=1 if PtoM_EC_18wkAN==1 | PtoM_PC_18wkAN==1
+	label variable PtoM_AnyC_18wkAN "Any C PtoM - start of preg to 18wk gestation"
+	label values PtoM_AnyC_18wkAN PtoM_AnyC_18wkAn 
+	label define PtoM_AnyC_18wkAN 0 "negative" 1 "positive"
+	tab PtoM_AnyC_18wkAN
+	
+	gen PtoM_AnyC_8wk=.
+	replace PtoM_AnyC_8wk=0 if PtoM_EC_8wk==0 & PtoM_PC_8wk==0
+	replace PtoM_AnyC_8wk=1 if PtoM_EC_8wk==1 | PtoM_PC_8wk==1
+	label variable PtoM_AnyC_8wk "Any C PtoM - mid preg to 8wk postnatally"
+	label values PtoM_AnyC_8wk PtoM_AnyC_8wk 
+	label define PtoM_AnyC_8wk 0 "negative" 1 "positive"
+	tab PtoM_AnyC_8wk
+	
+	gen PtoM_AnyC_8mnth=.
+	replace PtoM_AnyC_8mnth=0 if PtoM_EC_8mnth==0 & PtoM_PC_8mnth==0
+	replace PtoM_AnyC_8mnth=1 if PtoM_EC_8mnth==1 | PtoM_PC_8mnth==1
+	label variable PtoM_AnyC_8mnth "Any C PtoM - birth to 8mnth postnatally"
+	label values PtoM_AnyC_8mnth PtoM_AnyC_8mnth 
+	label define PtoM_AnyC_8mnth 0 "negative" 1 "positive"
+	tab PtoM_AnyC_8mnth
+	
+	gen PtoM_AnyC_21mnth=.
+	replace PtoM_AnyC_21mnth=0 if PtoM_EC_21mnth==0 & PtoM_PC_21mnth==0
+	replace PtoM_AnyC_21mnth=1 if PtoM_EC_21mnth==1 | PtoM_PC_21mnth==1
+	label variable PtoM_AnyC_21mnth "Any C PtoM - 8mnth to 21mnth postnatally"
+	label values PtoM_AnyC_21mnth PtoM_AnyC_21mnth 
+	label define PtoM_AnyC_21mnth 0 "negative" 1 "positive"
+	tab PtoM_AnyC_21mnth	
+	
+	gen PtoM_AnyC_33mnth=.
+	replace PtoM_AnyC_33mnth=0 if PtoM_EC_33mnth==0 & PtoM_PC_33mnth==0
+	replace PtoM_AnyC_33mnth=1 if PtoM_EC_33mnth==1 | PtoM_PC_33mnth==1
+	label variable PtoM_AnyC_33mnth "Any C PtoM - 18mnth to 33mnth postnatally"
+	label values PtoM_AnyC_33mnth PtoM_AnyC_33mnth 
+	label define PtoM_AnyC_33mnth 0 "negative" 1 "positive"
+	tab PtoM_AnyC_33mnth	
+	
+	gen PtoM_AnyC_47mnth=.
+	replace PtoM_AnyC_47mnth=0 if PtoM_EC_47mnth==0 & PtoM_PC_47mnth==0
+	replace PtoM_AnyC_47mnth=1 if PtoM_EC_47mnth==1 | PtoM_PC_47mnth==1
+	label variable PtoM_AnyC_47mnth "Any C PtoM - 30mnth to 47mnth postnatally"
+	label values PtoM_AnyC_47mnth PtoM_AnyC_47mnth 
+	label define PtoM_AnyC_47mnth 0 "negative" 1 "positive"
+	tab PtoM_AnyC_47mnth
+	
+	gen PtoM_AnyC_61mnth=.
+	replace PtoM_AnyC_61mnth=0 if PtoM_EC_61mnth==0 & PtoM_PC_61mnth==0
+	replace PtoM_AnyC_61mnth=1 if PtoM_EC_61mnth==1 | PtoM_PC_61mnth==1
+	label variable PtoM_AnyC_61mnth "Any C PtoM - 49mnth to 61mnth postnatally"
+	label values PtoM_AnyC_61mnth PtoM_AnyC_61mnth 
+	label define PtoM_AnyC_61mnth 0 "negative" 1 "positive"
+	tab PtoM_AnyC_61mnth
+	
+	gen PtoM_AnyC_73mnth=.
+	replace PtoM_AnyC_73mnth=0 if PtoM_EC_73mnth==0 & PtoM_PC_73mnth==0
+	replace PtoM_AnyC_73mnth=1 if PtoM_EC_73mnth==1 | PtoM_PC_73mnth==1
+	label variable PtoM_AnyC_73mnth "Any C PtoM - 60mnth to 73mnth postnatally"
+	label values PtoM_AnyC_73mnth PtoM_AnyC_73mnth 
+	label define PtoM_AnyC_73mnth 0 "negative" 1 "positive"
+	tab PtoM_AnyC_73mnth
+			
+*CODE CRUELTY EXPOSURES BY TYPE AND TIMING - PARTNER TO MOTHER
+	*Note: If all time-points are non-missing and all equal 0 -> composite exposure equals 0;
+	*      If all time-points are non-missing and at least one time point equals 1 -> composite exposure equals 1;
+	*      If at least one time-point is missing and at least one time point equals 1 -> composite exposure equals 1;
+	*      If at least one time-point is missing and all remaining time points equal 0 -> composite exposure equals missing; 
+	*      If all time-points are missing -> composite exposure equals missing. 
+				
+*PtoM pre- or perinatal C of either type.
+									
+	gen PtoM_EC_pre_or_perinatal=.
+	replace PtoM_EC_pre_or_perinatal=0 if PtoM_EC_18wkAN==0 & PtoM_EC_8wk==0
+	replace PtoM_EC_pre_or_perinatal=1 if PtoM_EC_18wkAN==1 | PtoM_EC_8wk==1 
+	label variable PtoM_EC_pre_or_perinatal "Emotional C PtoM - start of preg to 8wk postnatally"
+	label values PtoM_EC_pre_or_perinatal PtoM_EC_pre_or_perinatal
+	label define PtoM_EC_pre_or_perinatal 0 "negative" 1 "positive"
+	tab PtoM_EC_pre_or_perinatal, missing
+									
+	gen PtoM_PC_pre_or_perinatal=.
+	replace PtoM_PC_pre_or_perinatal=0 if PtoM_PC_18wkAN==0 & PtoM_PC_8wk==0
+	replace PtoM_PC_pre_or_perinatal=1 if PtoM_PC_18wkAN==1 | PtoM_PC_8wk==1 
+	label variable PtoM_PC_pre_or_perinatal "Physical C PtoM - start of preg to 8wk postnatally"
+	label values PtoM_PC_pre_or_perinatal PtoM_PC_pre_or_perinatal
+	label define PtoM_PC_pre_or_perinatal 0 "negative" 1 "positive"
+	tab PtoM_PC_pre_or_perinatal, missing
+					
+	gen PtoM_AnyC_pre_or_perinatal=.
+	replace PtoM_AnyC_pre_or_perinatal=0 if PtoM_EC_pre_or_perinatal==0 & PtoM_PC_pre_or_perinatal==0
+	replace PtoM_AnyC_pre_or_perinatal=1 if PtoM_EC_pre_or_perinatal==1 | PtoM_PC_pre_or_perinatal==1 
+	label variable PtoM_AnyC_pre_or_perinatal "Any C PtoM - start of preg to 8wk postnatally"     
+	label values PtoM_AnyC_pre_or_perinatal PtoM_AnyC_pre_or_perinatal 
+	label define PtoM_AnyC_pre_or_perinatal 0 "negative" 1 "positive"
+	tab PtoM_AnyC_pre_or_perinatal, missing
+				
+*PtoM postnatal C of either type.
+			
+	gen PtoM_EC_postnatal=.
+	replace PtoM_EC_postnatal=0 if PtoM_EC_8mnth==0 & PtoM_EC_21mnth==0 & PtoM_EC_33mnth==0 & PtoM_EC_47mnth==0 & PtoM_EC_61mnth==0 & PtoM_EC_73mnth==0
+	replace PtoM_EC_postnatal=1 if PtoM_EC_8mnth==1 | PtoM_EC_21mnth==1 | PtoM_EC_33mnth==1 | PtoM_EC_47mnth==1 | PtoM_EC_61mnth==1 | PtoM_EC_73mnth==1 
+	label variable PtoM_EC_postnatal "Emotional C PtoM - birth to 73mnths postnatally"
+	label values PtoM_EC_postnatal PtoM_EC_postnatal
+	label define PtoM_EC_postnatal 0 "negative" 1 "positive"
+	tab PtoM_EC_postnatal, missing
+						
+	gen PtoM_PC_postnatal=.
+	replace PtoM_PC_postnatal=0 if PtoM_PC_8mnth==0 & PtoM_PC_21mnth==0 & PtoM_PC_33mnth==0 & PtoM_PC_47mnth==0 & PtoM_PC_61mnth==0 & PtoM_PC_73mnth==0
+	replace PtoM_PC_postnatal=1 if PtoM_PC_8mnth==1 | PtoM_PC_21mnth==1 | PtoM_PC_33mnth==1 | PtoM_PC_47mnth==1 | PtoM_PC_61mnth==1 | PtoM_PC_73mnth==1 
+	label variable PtoM_PC_postnatal "Physical C PtoM - birth to 73 months postnatally"
+	label values PtoM_PC_postnatal PtoM_PC_postnatal
+	label define PtoM_PC_postnatal 0 "negative" 1 "positive"
+	tab PtoM_PC_postnatal, missing
+					
+	gen PtoM_AnyC_postnatal=.
+	replace PtoM_AnyC_postnatal=0 if PtoM_EC_postnatal==0 & PtoM_PC_postnatal==0
+	replace PtoM_AnyC_postnatal=1 if PtoM_EC_postnatal==1 | PtoM_PC_postnatal==1 
+	label variable PtoM_AnyC_postnatal "Any C PtoM - birth to 73 months postnatally"
+	label values PtoM_AnyC_postnatal PtoM_AnyC_postnatal
+	label define PtoM_AnyC_postnatal 0 "negative" 1 "positive"
+	tab PtoM_AnyC_postnatal, missing
+										
+*PtoM emotional C at any time
+					
+	gen PtoM_EC_anytime=.
+	replace PtoM_EC_anytime=0 if PtoM_EC_18wkAN==0 & PtoM_EC_8wk==0 & PtoM_EC_8mnth==0 & PtoM_EC_21mnth==0 & PtoM_EC_33mnth==0 & PtoM_EC_47mnth==0 & PtoM_EC_61mnth==0 & PtoM_EC_73mnth==0
+	replace PtoM_EC_anytime=1 if PtoM_EC_18wkAN==1 | PtoM_EC_8wk==1 | PtoM_EC_8mnth==1 | PtoM_EC_21mnth==1 | PtoM_EC_33mnth==1 | PtoM_EC_47mnth==1 | PtoM_EC_61mnth==1 | PtoM_EC_73mnth==1
+	label variable PtoM_EC_anytime "Emotional C PtoM - at any time"
+	label values PtoM_EC_anytime PtoM_EC_anytime 
+	label define PtoM_EC_anytime 0 "negative" 1 "positive"
+	tab PtoM_EC_anytime, missing	
+					
+*PtoM physical C at any time
+				
+	gen PtoM_PC_anytime=.
+	replace PtoM_PC_anytime=0 if PtoM_PC_18wkAN==0 & PtoM_PC_8wk==0 & PtoM_PC_8mnth==0 & PtoM_PC_21mnth==0 & PtoM_PC_33mnth==0 & PtoM_PC_47mnth==0 & PtoM_PC_61mnth==0 & PtoM_PC_73mnth==0
+	replace PtoM_PC_anytime=1 if PtoM_PC_18wkAN==1 | PtoM_PC_8wk==1 | PtoM_PC_8mnth==1 | PtoM_PC_21mnth==1 | PtoM_PC_33mnth==1 | PtoM_PC_47mnth==1 | PtoM_PC_61mnth==1 | PtoM_PC_73mnth==1 
+	label variable PtoM_PC_anytime "Physical C PtoM - at any time"
+	label values PtoM_PC_anytime PtoM_PC_anytime 
+	label define PtoM_PC_anytime 0 "negative" 1 "positive"
+	tab PtoM_PC_anytime, missing		
+					
+*PtoM any C at any time
+				
+	gen PtoM_AnyC_anytime=.
+	replace PtoM_AnyC_anytime=0 if PtoM_EC_anytime==0 & PtoM_PC_anytime==0
+	replace PtoM_AnyC_anytime=1 if PtoM_EC_anytime==1 | PtoM_PC_anytime==1
+	label variable PtoM_AnyC_anytime "Any C PtoM - at any time"
+	label values PtoM_AnyC_anytime PtoM_AnyC_anytime
+	label define PtoM_AnyC_anytime 0 "negative" 1 "positive"
+	tab PtoM_AnyC_anytime, missing	
+		
+*PARENT TO CHILD EXPOSURE VARIABLES
+		
+	gen PtoC_EC_18wkAN=.
+	replace PtoC_EC_18wkAN=0 if b608==5
+	replace PtoC_EC_18wkAN=1 if b608<=4
+	label variable PtoC_EC_18wkAN "Emotional C PtoC - start of preg to 18wk gestation"
+	label values PtoC_EC_18wkAN PtoC_EC_18wkAN
+	label define PtoC_EC_18wkAN 0 "negative" 1 "positive"
+	tab PtoC_EC_18wkAN b608
+	tab PtoC_EC_18wkAN
+											
+	gen PtoC_PC_18wkAN=.
+	replace PtoC_PC_18wkAN=0 if b596==5
+	replace PtoC_PC_18wkAN=1 if b596<=4
+	label variable PtoC_PC_18wkAN "Physical C PtoC - start of preg to 18 wk gestation"
+	label values PtoC_PC_18wkAN PtoC_PC_18wkAN
+	label define PtoC_PC_18wkAN 0 "negative" 1 "positive"
+	tab PtoC_PC_18wkAN b596 
+	tab PtoC_PC_18wkAN
+										
+	gen PtoC_EC_8wk=.
+	replace PtoC_EC_8wk=0 if e438==5
+	replace PtoC_EC_8wk=1 if e438<=4
+	label variable PtoC_EC_8wk "Emotional C PtoC - mid preg to 8wk postnatally"
+	label values PtoC_EC_8wk PtoC_EC_8wk
+	label define PtoC_EC_8wk 0 "negative" 1 "positive"
+	tab PtoC_EC_8wk e438
+	tab PtoC_EC_8wk
+											
+	gen PtoC_PC_8wk=.
+	replace PtoC_PC_8wk=0 if e426==5
+	replace PtoC_PC_8wk=1 if e426<=4
+	label variable PtoC_PC_8wk "Physical C PtoC - mid preg to 8wk postnatally"
+	label values PtoC_PC_8wk PtoC_PC_8wk
+	label define PtoC_PC_8wk 0 "negative" 1 "positive"
+	tab PtoC_PC_8wk e426
+	tab PtoC_PC_8wk
+											
+	gen PtoC_EC_8mnth=.
+	replace PtoC_EC_8mnth=0 if f257==5
+	replace PtoC_EC_8mnth=1 if f257<=4
+	label variable PtoC_EC_8mnth "Emotional C PtoC - birth to 8mnth postnatally"
+	label values PtoC_EC_8mnth PtoC_EC_8mnth
+	label define PtoC_EC_8mnth 0 "negative" 1 "positive"
+	tab PtoC_EC_8mnth f257
+	tab PtoC_EC_8mnth
+											
+	gen PtoC_PC_8mnth=.
+	replace PtoC_PC_8mnth=0 if f246==5
+	replace PtoC_PC_8mnth=1 if f246<=4
+	label variable PtoC_PC_8mnth "Physical C PtoC - birth to 8mnth postnatally" 
+	label values PtoC_PC_8mnth PtoC_PC_8mnth
+	label define PtoC_PC_8mnth 0 "negative" 1 "positive"
+	tab PtoC_PC_8mnth f246
+	tab PtoC_PC_8mnth
+										
+	gen PtoC_EC_21mnth=.
+	replace PtoC_EC_21mnth=0 if g337==5
+	replace PtoC_EC_21mnth=1 if g337<=4
+	label variable PtoC_EC_21mnth "Emotional C PtoC - 8mnth to 21mnth postnatally"
+	label values PtoC_EC_21mnth PtoC_EC_21mnth 
+	label define PtoC_EC_21mnth 0 "negative" 1 "positive"
+	tab PtoC_EC_21mnth g337
+	tab PtoC_EC_21mnth
+											
+	gen PtoC_PC_21mnth=.
+	replace PtoC_PC_21mnth=0 if g326==5
+	replace PtoC_PC_21mnth=1 if g326<=4
+	label variable PtoC_PC_21mnth "Physical C PtoC - 8mnth to 21mnth postnatally"
+	label values PtoC_PC_21mnth PtoC_PC_21mnth
+	label define PtoC_PC_21mnth 0 "negative" 1 "positive"
+	tab PtoC_PC_21mnth g326
+	tab PtoC_PC_21mnth
+											
+	gen PtoC_EC_33mnth=.
+	replace PtoC_EC_33mnth=0 if h247==5
+	replace PtoC_EC_33mnth=1 if h247<=4
+	label variable PtoC_EC_33mnth "Emotional C PtoC - 18mnth to 33mnth postnatally"
+	label values PtoC_EC_33mnth PtoC_EC_33mnth
+	label define PtoC_EC_33mnth 0 "negative" 1 "positive"
+	tab PtoC_EC_33mnth h247
+	tab PtoC_EC_33mnth
+											
+	gen PtoC_PC_33mnth=.
+	replace PtoC_PC_33mnth=0 if h236==5
+	replace PtoC_PC_33mnth=1 if h236<=4
+	label variable PtoC_PC_33mnth "Physical C PtoC - 18mnth to 33mnth postnatally"
+	label values PtoC_PC_33mnth PtoC_PC_33mnth
+	label define PtoC_PC_33mnth 0 "negative" 1 "positive"
+	tab PtoC_PC_33mnth h236
+	tab PtoC_PC_33mnth
+											
+	gen PtoC_EC_47mnth=.
+	replace PtoC_EC_47mnth=0 if j337==5
+	replace PtoC_EC_47mnth=1 if j337<=4
+	label variable PtoC_EC_47mnth "Emotional C PtoC - 30mnth to 47mnth postnatally"
+	label values PtoC_EC_47mnth PtoC_EC_47mnth
+	label define PtoC_EC_47mnth 0 "negative" 1 "positive"
+	tab PtoC_EC_47mnth j337
+	tab PtoC_EC_47mnth
+											
+	gen PtoC_PC_47mnth=.
+	replace PtoC_PC_47mnth=0 if j326==5
+	replace PtoC_PC_47mnth=1 if j326<=4
+	label variable PtoC_PC_47mnth "Physical C PtoC - 30mnth to 47mnth postnatally"
+	label values PtoC_PC_47mnth PtoC_PC_47mnth
+	label define PtoC_PC_47mnth 0 "negative" 1 "positive"
+	tab PtoC_PC_47mnth j326
+	tab PtoC_PC_47mnth
+											
+	gen PtoC_EC_61mnth=.
+	replace PtoC_EC_61mnth=0 if k4037==5
+	replace PtoC_EC_61mnth=1 if k4037<=4
+	label variable PtoC_EC_61mnth "Emotional C PtoC - 49mnth to 61mnth postnatally"
+	label values PtoC_EC_61mnth PtoC_EC_61mnth
+	label define PtoC_EC_61mnth 0 "negative" 1 "positive"
+	tab PtoC_EC_61mnth k4037
+	tab PtoC_EC_61mnth
+											
+	gen PtoC_PC_61mnth=.
+	replace PtoC_PC_61mnth=0 if k4026==5
+	replace PtoC_PC_61mnth=1 if k4026<=4
+	label variable PtoC_PC_61mnth "Physical C PtoC - 49mnth to 61mnth postnatally"
+	label values PtoC_PC_61mnth PtoC_PC_61mnth
+	label define PtoC_PC_61mnth 0 "negative" 1 "positive"
+	tab PtoC_PC_61mnth k4026
+	tab PtoC_PC_61mnth
+											
+	gen PtoC_EC_73mnth=.
+	replace PtoC_EC_73mnth=0 if l4037==5
+	replace PtoC_EC_73mnth=1 if l4037<=4
+	label variable PtoC_EC_73mnth "Emotional C PtoC - 60mnth to 73mnth postnatally"
+	label values PtoC_EC_73mnth PtoC_EC_73mnth
+	label define PtoC_EC_73mnth 0 "negative" 1 "positive"
+	tab PtoC_EC_73mnth l4037
+	tab PtoC_EC_73mnth
+											
+	gen PtoC_PC_73mnth=.
+	replace PtoC_PC_73mnth=0 if l4026==5
+	replace PtoC_PC_73mnth=1 if l4026<=4
+	label variable PtoC_PC_73mnth "Physical C PtoC - 60mnth to 73mnth postnatally"
+	label values PtoC_PC_73mnth PtoC_PC_73mnth
+	label define PtoC_PC_73mnth 0 "negative" 1 "positive"
+	tab PtoC_PC_73mnth l4026
+	tab PtoC_PC_73mnth		
+		
+	gen MtoC_EC_8mnth=.
+	replace MtoC_EC_8mnth=0 if f258==5
+	replace MtoC_EC_8mnth=1 if f258<=4
+	label variable MtoC_EC_8mnth "Emotional C MtoC - birth to 8mnth postnatally"
+	label values MtoC_EC_8mnth MtoC_EC_8mnth
+	label define MtoC_EC_8mnth 0 "negative" 1 "positive"
+	tab MtoC_EC_8mnth f258
+	tab MtoC_EC_8mnth
+										
+	gen MtoC_PC_8mnth=.
+	replace MtoC_PC_8mnth=0 if f247==5
+	replace MtoC_PC_8mnth=1 if f247<=4
+	label variable MtoC_PC_8mnth "Physical C MtoC - birth to 8mnth postnatally"
+	label values MtoC_PC_8mnth MtoC_PC_8mnth
+	label define MtoC_PC_8mnth 0 "negative" 1 "positive"
+	tab MtoC_PC_8mnth f247
+	tab MtoC_PC_8mnth
+									
+	gen MtoC_EC_21mnth=.
+	replace MtoC_EC_21mnth=0 if g338a==2
+	replace MtoC_EC_21mnth=1 if g338a==1
+	label variable MtoC_EC_21mnth "Emotional C MtoC - 8mnth to 21mnth postnatally"
+	label values MtoC_EC_21mnth MtoC_EC_21mnth 
+	label define MtoC_EC_21mnth 0 "negative" 1 "positive"
+	tab MtoC_EC_21mnth g338a
+	tab MtoC_EC_21mnth
+										
+	gen MtoC_PC_21mnth=.
+	replace MtoC_PC_21mnth=0 if g327==5
+	replace MtoC_PC_21mnth=1 if g327<=4
+	label variable MtoC_PC_21mnth "Physical C MtoC - 8mnth to 21mnth postnatally"
+	label values MtoC_PC_21mnth MtoC_PC_21mnth
+	label define MtoC_PC_21mnth 0 "negative" 1 "positive"
+	tab MtoC_PC_21mnth g327
+	tab MtoC_PC_21mnth
+										
+	gen MtoC_EC_33mnth=.
+	replace MtoC_EC_33mnth=0 if h248==5
+	replace MtoC_EC_33mnth=1 if h248<=4
+	label variable MtoC_EC_33mnth "Emotional C MtoC - 18mnth to 33mnth postnatally"
+	label values MtoC_EC_33mnth MtoC_EC_33mnth
+	label define MtoC_EC_33mnth 0 "negative" 1 "positive"
+	tab MtoC_EC_33mnth h248
+	tab MtoC_EC_33mnth 
+										
+	gen MtoC_PC_33mnth=.
+	replace MtoC_PC_33mnth=0 if h237==5
+	replace MtoC_PC_33mnth=1 if h237<=4
+	label variable MtoC_PC_33mnth "Physical C MtoC - 18mnth to 33mnth postnatally"
+	label values MtoC_PC_33mnth MtoC_PC_33mnth
+	label define MtoC_PC_33mnth 0 "negative" 1 "positive"
+	tab MtoC_PC_33mnth h237
+	tab MtoC_PC_33mnth
+										
+	gen MtoC_EC_47mnth=.
+	replace MtoC_EC_47mnth=0 if j338==5
+	replace MtoC_EC_47mnth=1 if j338<=4
+	label variable MtoC_EC_47mnth "Emotional C MtoC - 30mnth to 47mnth postnatally"
+	label values MtoC_EC_47mnth MtoC_EC_47mnth
+	label define MtoC_EC_47mnth 0 "negative" 1 "positive"
+	tab MtoC_EC_47mnth j338
+	tab MtoC_EC_47mnth
+										
+	gen MtoC_PC_47mnth=.
+	replace MtoC_PC_47mnth=0 if j327==5
+	replace MtoC_PC_47mnth=1 if j327<=4
+	label variable MtoC_PC_47mnth "Physical C MtoC - 30mnth to 47mnth postnatally"
+	label values MtoC_PC_47mnth MtoC_PC_47mnth
+	label define MtoC_PC_47mnth 0 "negative" 1 "positive"
+	tab MtoC_PC_47mnth j327
+	tab MtoC_PC_47mnth
+										
+	gen MtoC_EC_61mnth=.
+	replace MtoC_EC_61mnth=0 if k4038==5
+	replace MtoC_EC_61mnth=1 if k4038<=4
+	label variable MtoC_EC_61mnth "Emotional C MtoC - 49mnth to 61mnth postnatally"
+	label values MtoC_EC_61mnth MtoC_EC_61mnth
+	label define MtoC_EC_61mnth 0 "negative" 1 "positive"
+	tab MtoC_EC_61mnth k4038
+	tab MtoC_EC_61mnth
+										
+	gen MtoC_PC_61mnth=.
+	replace MtoC_PC_61mnth=0 if k4027==5
+	replace MtoC_PC_61mnth=1 if k4027<=4
+	label variable MtoC_PC_61mnth "Physical C MtoC - 49mnth to 61mnth postnatally"
+	label values MtoC_PC_61mnth MtoC_PC_61mnth
+	label define MtoC_PC_61mnth 0 "negative" 1 "positive"
+	tab MtoC_PC_61mnth k4027
+	tab MtoC_PC_61mnth
+										
+	gen MtoC_EC_73mnth=.
+	replace MtoC_EC_73mnth=0 if l4038==5
+	replace MtoC_EC_73mnth=1 if l4038<=4
+	label variable MtoC_EC_73mnth "Emotional C MtoC - 60mnth to 73mnth postnatally"
+	label values MtoC_EC_73mnth MtoC_EC_73mnth
+	label define MtoC_EC_73mnth 0 "negative" 1 "positive"
+	tab MtoC_EC_73mnth l4038
+	tab MtoC_EC_73mnth
+										
+	gen MtoC_PC_73mnth=.
+	replace MtoC_PC_73mnth=0 if l4027==5
+	replace MtoC_PC_73mnth=1 if l4027<=4
+	label variable MtoC_PC_73mnth "Physical C MtoC - 60mnth to 73mnth postnatally"
+	label values MtoC_PC_73mnth MtoC_PC_73mnth
+	label define MtoC_PC_73mnth 0 "negative" 1 "positive"
+	tab MtoC_PC_73mnth l4027
+	tab MtoC_PC_73mnth		
+	
+*CODE VARIABLE FOR ANY PARENT-TO-CHILD EXPOSURE
+
+	gen ParentToChild=.
+	replace ParentToChild=0 if /*
+	
+	*/ PtoC_EC_18wkAN==0 & /*
+	*/ PtoC_EC_8wk==0 & /*
+	*/ PtoC_EC_8mnth==0 & /*
+	*/ PtoC_EC_21mnth==0 & /*
+	*/ PtoC_EC_33mnth==0 & /*
+	*/ PtoC_EC_47mnth==0 & /*
+	*/ PtoC_EC_61mnth==0 & /*
+	*/ PtoC_EC_73mnth==0 & /*
+	
+	*/ PtoC_PC_18wkAN==0 & /*
+	*/ PtoC_PC_8wk==0 & /*
+	*/ PtoC_PC_8mnth==0 & /*
+	*/ PtoC_PC_21mnth==0 & /*
+	*/ PtoC_PC_33mnth==0 & /*
+	*/ PtoC_PC_47mnth==0 & /*
+	*/ PtoC_PC_61mnth==0 & /*
+	*/ PtoC_PC_73mnth==0 & /*
+	
+	*/ MtoC_EC_8mnth==0 & /*
+	*/ MtoC_EC_21mnth==0 & /*
+	*/ MtoC_EC_33mnth==0 & /*
+	*/ MtoC_EC_47mnth==0 & /*
+	*/ MtoC_EC_61mnth==0 & /*
+	*/ MtoC_EC_73mnth==0 & /*
+	
+	*/ MtoC_PC_8mnth==0 & /*
+	*/ MtoC_PC_21mnth==0 & /*
+	*/ MtoC_PC_33mnth==0 & /*
+	*/ MtoC_PC_47mnth==0 & /*
+	*/ MtoC_PC_61mnth==0 & /*
+	*/ MtoC_PC_73mnth==0 
+	
+	replace ParentToChild=1 if /*
+	*/ inlist(1, /*
+	
+	*/ PtoC_EC_18wkAN, /*
+	*/ PtoC_EC_8wk, /*
+	*/ PtoC_EC_8mnth, /*
+	*/ PtoC_EC_21mnth, /*
+	*/ PtoC_EC_33mnth, /*
+	*/ PtoC_EC_47mnth, /*
+	*/ PtoC_EC_61mnth, /*
+	*/ PtoC_EC_73mnth, /*
+	
+	*/ PtoC_PC_18wkAN, /*
+	*/ PtoC_PC_8wk, /*
+	*/ PtoC_PC_8mnth, /*
+	*/ PtoC_PC_21mnth, /*
+	*/ PtoC_PC_33mnth, /*
+	*/ PtoC_PC_47mnth, /*
+	*/ PtoC_PC_61mnth, /*
+	*/ PtoC_PC_73mnth, /*
+	
+	*/ MtoC_EC_8mnth, /*
+	*/ MtoC_EC_21mnth, /*
+	*/ MtoC_EC_33mnth, /*
+	*/ MtoC_EC_47mnth, /*
+	*/ MtoC_EC_61mnth, /*
+	*/ MtoC_EC_73mnth, /*
+
+	*/ MtoC_PC_8mnth, /*
+	*/ MtoC_PC_21mnth, /*
+	*/ MtoC_PC_33mnth, /*
+	*/ MtoC_PC_47mnth, /*
+	*/ MtoC_PC_61mnth, /*
+	*/ MtoC_PC_73mnth)
+		
+*CODE OUTCOMES
+
+	foreach type in total verbal performance {
+		gen WISC_`type'_cat=.
+		replace WISC_`type'_cat=1 if wisc`type'iqf8<=89
+		replace WISC_`type'_cat=0 if wisc`type'iqf8>=90 & wisc`type'iqf8<=109
+		replace WISC_`type'_cat=0 if wisc`type'iqf8>=110 & wisc`type'iqf8!=.
+		list WISC_`type'_cat wisc`type'iqf8 in 1/100
+		label variable WISC_`type'_cat "below-average `type' intelligence"
+	}
+			
+	tab WISC_total_cat
+	tab WISC_verbal_cat
+	tab WISC_performance_cat
+		
+	count if wisctotaliqf8!=.
+	count if wiscverbaliqf8!=. 
+	count if wiscperformanceiqf8!=.
+
+*CODE COVARIATES
+			
+*Gender
+	
+	gen sex=.
+	replace sex=0 if kz021==1
+	replace sex=1 if kz021==2
+	label variable sex "sex"
+	label values sex sex
+	label define sex 0 "male" 1 "female"
+	tab sex
+		
+*Child ethnic background
+		
+	gen childethnicity=.
+	replace childethnicity=1 if Childethnicbackgroundderive=="White"
+	replace childethnicity=2 if Childethnicbackgroundderive=="Non-white" | Childethnicbackgroundderive=="Contradition - assume mixed"
+	replace childethnicity=3 if Childethnicbackgroundderive=="Contradiction - assume mixed"
+	replace childethnicity=. if Childethnicbackgroundderive=="No data"
+		
+	tab childethnicity Childethnicbackgroundderive
+		
+	recode childethnicity (3=2)
+	tab childethnicity
+
+*Gestational age
+	
+	gen gestationalage=.
+	replace gestationalage=1 if bestgest<37
+	replace gestationalage=2 if bestgest>=37 & bestgest<=41
+	replace gestationalage=3 if bestgest>41
+	label variable gestationalage "gestational age"
+	label values gestationalage gestationalage
+	label define gestationalage 1 "<37" 2 "37-41" 3 ">41"
+	tab bestgest gestationalage
+	tab gestationalage		
+				
+*Maternal age
+	
+	rename Ageofmotheratbirth matage
+	replace matage=. if matage==-1
+	tab matage if WISC_total_tertiles~=., missing
+								
+	gen matage_cat=.
+	replace matage_cat=1 if matage<20
+	replace matage_cat=2 if matage>=20 & matage<=35
+	replace matage_cat=3 if matage>35 & matage~=. 
+	label variable matage_cat "maternal age - categorical"
+	label values matage_cat matage_cat 
+	label define matage_cat 1 "<20" 2 "20-35" 3 ">35"
+	tab matage_cat		
+						
+*Financial hardship
+	
+	rename Difficultyinaffordingfood_r diff_food
+	rename CI diff_cloth
+	rename Difficultyinaffordingheating_ diff_heat
+	rename CK diff_accom
+	rename CL diff_baby
+	rename Financialdifficulties diff_score
+	tab1 diff_food diff_cloth diff_heat diff_accom /*
+	*/ diff_baby diff_score if WISC_total_tertiles~=., missing
+	replace diff_score=. if diff_score==-7 | diff_score==-1
+	tab diff_score if WISC_total_tertiles~=., missing
+								
+	gen diff_score_cat=.
+	replace diff_score_cat=0 if diff_score==0
+	replace diff_score_cat=1 if diff_score>0 & diff_score<=7
+	replace diff_score_cat=2 if diff_score>7 & diff_score~=.
+	label variable diff_score_cat "financial difficulty score - categorical"
+	label values diff_score_cat diff_score_cat
+	label define diff_score_cat 0 "0" 1 "1-7" 2 "8-15" 
+	tab diff_score_cat diff_score
+							
+*Mother's social class
+	
+	rename SocialClassMaternal mat_sclass
+	tab mat_sclass if WISC_total_tertiles~=., missing
+	replace mat_sclass=. if mat_sclass==-1 | mat_sclass==65
+	label values mat_sclass mat_sclass
+	label define mat_sclass 1 "I" 2 "II" 3 "IIInm" 4 "IIIm" 5 "IV" 6 "V"
+	tab mat_sclass if WISC_total_tertiles~=., missing
+									
+	gen mat_sclass_cat=.
+	replace mat_sclass_cat=1 if mat_sclass==1 | mat_sclass==2
+	replace mat_sclass_cat=2 if mat_sclass==3 | mat_sclass==4
+	replace mat_sclass_cat=3 if mat_sclass==5 | mat_sclass==6
+	label variable mat_sclass_cat "mother's social class - 3 categories"
+	label values mat_sclass_cat mat_sclass_cat
+	label define mat_sclass_cat 1 "I/II" 2 "IIInm/IIIm" 3 "IV/V"
+	tab mat_sclass mat_sclass_cat if WISC_total_tertiles~=., missing
+	tab mat_sclass_cat if WISC_total_tertiles~=., missing
+									
+*Mother's partner's social class
+	
+	rename SocialClassPaternal partn_sclass
+	tab partn_sclass if WISC_total_tertiles~=., missing
+	replace partn_sclass=. if partn_sclass==-1 | partn_sclass==65
+	label values partn_sclass partn_sclass
+	label define partn_sclass 1 "I" 2 "II" 3 "IIInm" 4 "IIIm" 5 "IV" 6 "V"
+	tab partn_sclass if WISC_total_tertiles~=., missing
+									
+	gen partn_sclass_cat=.
+	replace partn_sclass_cat=1 if partn_sclass==1 | partn_sclass==2
+	replace partn_sclass_cat=2 if partn_sclass==3 | partn_sclass==4
+	replace partn_sclass_cat=3 if partn_sclass==5 | partn_sclass==6
+	label variable partn_sclass_cat "mother's partner's social class - 3 categories"
+	label values partn_sclass_cat partn_sclass_cat
+	label define partn_sclass_cat 1 "I/II" 2 "IIInm/IIIm" 3 "IV/V"
+	tab partn_sclass partn_sclass_cat if WISC_total_tertiles~=., missing
+	tab partn_sclass_cat if WISC_total_tertiles~=., missing
+				
+*Mother's education
+	
+	rename Mumshighestedqualification2 mat_educ
+	tab mat_educ if WISC_total_tertiles~=., missing
+	replace mat_educ=. if mat_educ==-1
+	tab mat_educ if WISC_total_tertiles~=., missing
+									
+	gen mat_educ_cat=.
+	replace mat_educ_cat=3 if mat_educ==1 | mat_educ==2
+	replace mat_educ_cat=2 if mat_educ==3
+	replace mat_educ_cat=1 if mat_educ==4 | mat_educ==5
+	label variable mat_educ_cat "mother's education - 3 categories"
+	label values mat_educ_cat mat_educ_cat
+	label define mat_educ_cat 1 "highest" 2 "middle" 3 "lowest"
+	tab mat_educ_cat mat_educ if WISC_verbal_tertiles~=.
+	tab mat_educ_cat MumsEdu_Low
+						
+*Partner's education
+	
+	rename Partnershighestedqualificatio partn_educ
+	tab partn_educ if WISC_total_tertiles~=., missing
+	replace partn_educ=. if partn_educ==-1
+	tab partn_educ if WISC_total_tertiles~=., missing
+									
+	gen partn_educ_cat=.
+	replace partn_educ_cat=3 if partn_educ==1 | partn_educ==2
+	replace partn_educ_cat=2 if partn_educ==3
+	replace partn_educ_cat=1 if partn_educ==4 | partn_educ==5
+	label variable partn_educ_cat "mother's partner's education - 3 categories"
+	label values partn_educ_cat partn_educ_cat
+	label define partn_educ_cat 1 "highest" 2 "middle" 3 "lowest"
+	tab partn_educ_cat partn_educ if WISC_verbal_tertiles~=.
+	tab partn_educ_cat PartnersEdu_Low
+						
+*Smoking during pregnancy
+	
+	rename Smokedat18wks smoke_preg
+	label variable smoke_preg "mother smoked tobacco during pregnancy"
+	label values smoke_preg smoke_preg 
+	label define smoke_preg 0 "untrue" 1 "true"
+	tab smoke_preg if WISC_total_tertiles~=., missing
+				
+*Drinking during pregnancy
+	
+	rename ExcessiveAlcoholUse drink_preg
+	label variable drink_preg "mother drank alcohol during pregnancy"
+	label values drink_preg drink_preg 
+	label define drink_preg 0 "untrue" 1 "true"
+	tab drink_preg if WISC_total_tertiles~=., missing
+			
+*Maternal postnatal depression scale_binary
+	
+	rename h200a_DVEdinburghpostnatalde depr_scale
+	replace depr_scale=. if depr_scale==-6 | depr_scale==-5
+	sort depr_scale 
+										
+	gen depr_scale_cat=.
+	replace depr_scale_cat=0 if depr_scale< 13
+	replace depr_scale_cat=1 if depr_scale>=13 & depr_scale~=.
+	label variable depr_scale_cat "NEW_depression scale_binary"
+	label values depr_scale_cat depr_scale_cat 
+	label define depr_scale_cat 0 "score<13" 1 "score>=13"
+	tab depr_scale_cat depr_scale
+	tab depr_scale_cat		
+	
+*ORDER VARIABLES	
+	
+	order idno /*
+	*/ PtoM_EC_18wkAN PtoM_EC_8wk /*
+	*/ PtoM_EC_8mnth PtoM_EC_21mnth /*
+	*/ PtoM_EC_33mnth PtoM_EC_47mnth /*
+	*/ PtoM_EC_61mnth PtoM_EC_73mnth /*
+	*/ PtoM_PC_18wkAN PtoM_PC_8wk /*
+	*/ PtoM_PC_8mnth PtoM_PC_21mnth /*
+	*/ PtoM_PC_33mnth PtoM_PC_47mnth /*
+	*/ PtoM_PC_61mnth PtoM_PC_73mnth /*
+	*/ PtoM_AnyC_18wkAN PtoM_AnyC_8wk /*
+	*/ PtoM_AnyC_8mnth PtoM_AnyC_21mnth /*
+	*/ PtoM_AnyC_33mnth PtoM_AnyC_47mnth /*
+	*/ PtoM_AnyC_61mnth PtoM_AnyC_73mnth /*
+	*/ PtoM_EC_pre_or_perinatal /*
+	*/ PtoM_PC_pre_or_perinatal /*
+	*/ PtoM_AnyC_pre_or_perinatal /*
+	*/ PtoM_EC_postnatal /*
+	*/ PtoM_PC_postnatal /*
+	*/ PtoM_AnyC_postnatal /*
+	*/ PtoM_EC_anytime /*
+	*/ PtoM_PC_anytime /*
+	*/ PtoM_AnyC_anytime /*	
+	*/ gestationalage matage_cat smoke_preg drink_preg depr_scale_cat /*
+	*/ diff_score_cat mat_sclass_cat partn_sclass_cat mat_educ_cat partn_educ_cat /*
+	*/ wisctotaliqf8 wiscverbaliqf8 wiscperformanceiqf8
+	
+save "`path3'tempdata.dta", replace	
+		
+*FIGURE 1: Sample exclusions 
+
+	preserve
+		count
+		drop if kz011==2
+		count
+		keep if singleton==1
+		count	
+		drop if kz011b==2
+		count
+			
+		count if inlist(., wisctotaliqf8, wiscverbaliqf8, wiscperformanceiqf8)
+		drop if inlist(., wisctotaliqf8, wiscverbaliqf8, wiscperformanceiqf8)
+		count
+		
+		count if inlist(., PtoM_EC_pre_or_perinatal, PtoM_EC_postnatal, PtoM_PC_pre_or_perinatal, PtoM_PC_postnatal)
+		drop if inlist(., PtoM_EC_pre_or_perinatal, PtoM_EC_postnatal, PtoM_PC_pre_or_perinatal, PtoM_PC_postnatal)
+		count
+		
+		tab PtoM_AnyC_anytime
+		tab PtoM_EC_anytime
+		tab PtoM_PC_anytime
+			
+		tab PtoM_AnyC_anytime WISC_total_cat
+		tab PtoM_AnyC_anytime WISC_verbal_cat
+		tab PtoM_AnyC_anytime WISC_performance_cat
+
+		tab PtoM_EC_anytime WISC_total_cat
+		tab PtoM_EC_anytime WISC_verbal_cat
+		tab PtoM_EC_anytime WISC_performance_cat
+
+		tab PtoM_PC_anytime WISC_total_cat
+		tab PtoM_PC_anytime WISC_verbal_cat
+		tab PtoM_PC_anytime WISC_performance_cat
+
+		tab PtoM_PC_pre_or_perinatal PtoM_PC_postnatal
+				
+		gen PtoM_PC_timed=.
+		replace PtoM_PC_timed=0 if PtoM_PC_pre_or_perinatal==0 & PtoM_PC_postnatal==0
+		replace PtoM_PC_timed=1 if PtoM_PC_pre_or_perinatal==1 & PtoM_PC_postnatal==0
+		replace PtoM_PC_timed=2 if PtoM_PC_pre_or_perinatal==0 & PtoM_PC_postnatal==1
+		replace PtoM_PC_timed=3 if PtoM_PC_pre_or_perinatal==1 & PtoM_PC_postnatal==1
+					
+		tab PtoM_PC_anytime
+		tab PtoM_PC_timed
+				
+		tab PtoM_PC_timed WISC_total_cat
+		tab PtoM_PC_timed WISC_verbal_cat
+		tab PtoM_PC_timed WISC_performance_cat
+				
+		tab PtoM_PC_timed
+							
+		tab PtoM_AnyC_anytime if ParentToChild==0
+		tab PtoM_EC_anytime if ParentToChild==0
+		tab PtoM_PC_anytime if ParentToChild==0
+			
+		tab PtoM_AnyC_anytime WISC_total_cat if ParentToChild==0
+		tab PtoM_AnyC_anytime WISC_verbal_cat if ParentToChild==0
+		tab PtoM_AnyC_anytime WISC_performance_cat if ParentToChild==0
+
+		tab PtoM_EC_anytime WISC_total_cat if ParentToChild==0
+		tab PtoM_EC_anytime WISC_verbal_cat if ParentToChild==0
+		tab PtoM_EC_anytime WISC_performance_cat if ParentToChild==0
+
+		tab PtoM_PC_anytime WISC_total_cat if ParentToChild==0
+		tab PtoM_PC_anytime WISC_verbal_cat if ParentToChild==0
+		tab PtoM_PC_anytime WISC_performance_cat if ParentToChild==0
+					
+		tab PtoM_PC_anytime if ParentToChild==0
+		tab PtoM_PC_timed if ParentToChild==0
+			
+		tab PtoM_PC_timed WISC_total_cat if ParentToChild==0
+		tab PtoM_PC_timed WISC_verbal_cat if ParentToChild==0
+		tab PtoM_PC_timed WISC_performance_cat if ParentToChild==0
+				
+		tab PtoM_PC_timed if ParentToChild==0			
+			
+		count if sex==.
+		count if gestationalage==.
+		count if matage==.
+		count if smoke_preg==.
+		count if drink_preg==.
+		count if EPDS_perinatal==.
+		count if EPDS_postnatal==.
+		count if childethnicity==.
+		count if mat_sclass==.
+		count if partn_sclass==.
+		count if mat_educ==.
+		count if partn_educ==.
+		count if diff_score_cat==.
+		
+		count if inlist(., sex, gestationalage, matage, smoke_preg, drink_preg, EPDS_perinatal, EPDS_postnatal, childethnicity, /*
+		*/ mat_sclass, partn_sclass, mat_educ, partn_educ, diff_score_cat)
+		count
+		
+		drop if inlist(., sex, gestationalage, matage, smoke_preg, drink_preg, EPDS_perinatal, EPDS_postnatal, childethnicity, /*
+		*/ mat_sclass, partn_sclass, mat_educ, partn_educ, diff_score_cat)
+		count
+					
+		tab PtoM_AnyC_anytime
+		tab PtoM_EC_anytime
+		tab PtoM_PC_anytime
+			
+		tab PtoM_AnyC_anytime WISC_total_cat
+		tab PtoM_AnyC_anytime WISC_verbal_cat
+		tab PtoM_AnyC_anytime WISC_performance_cat
+
+		tab PtoM_EC_anytime WISC_total_cat
+		tab PtoM_EC_anytime WISC_verbal_cat
+		tab PtoM_EC_anytime WISC_performance_cat
+
+		tab PtoM_PC_anytime WISC_total_cat
+		tab PtoM_PC_anytime WISC_verbal_cat
+		tab PtoM_PC_anytime WISC_performance_cat
+		
+		tab PtoM_PC_anytime
+		tab PtoM_PC_timed
+				
+		tab PtoM_PC_timed WISC_total_cat
+		tab PtoM_PC_timed WISC_verbal_cat
+		tab PtoM_PC_timed WISC_performance_cat
+				
+		tab PtoM_PC_timed
+		
+	restore
+
+*Table S4. Characteristics of children with complete or missing data on exposure/outcome.
+
+	preserve
+		count
+		drop if kz011==2
+		count
+		keep if singleton==1
+		count	
+		drop if kz011b==2
+		count
+		
+		gen missing=0
+		replace missing=1 if inlist(., wisctotaliqf8, wiscverbaliqf8, wiscperformanceiqf8, /*
+		*/ PtoM_EC_pre_or_perinatal, PtoM_EC_postnatal, PtoM_PC_pre_or_perinatal, PtoM_PC_postnatal)
+		count
+		tab missing
+		
+		foreach variable in /*
+		*/ sex childethnicity gestationalage matage_cat mat_sclass_cat partn_sclass_cat /*
+		*/ mat_educ_cat partn_educ_cat smoke_preg drink_preg EPDS_perinatal EPDS_postnatal diff_score_cat {
+			tab `variable' missing, miss 
+			tab `variable' missing, col chi	
+		}
+	
+	restore
+
+*Table 1. Characteristics of the sample by exposure status - complete-case analysis dataset (n=3,153)
+
+	preserve
+		count
+		drop if kz011==2
+		count
+		keep if singleton==1
+		count	
+		drop if kz011b==2
+		count
+		drop if inlist(., wisctotaliqf8, wiscverbaliqf8, wiscperformanceiqf8, /*
+		*/ PtoM_EC_pre_or_perinatal, PtoM_EC_postnatal, PtoM_PC_pre_or_perinatal, PtoM_PC_postnatal)
+		count
+		
+		drop if inlist(., sex, childethnicity, gestationalage, matage_cat, mat_sclass_cat, partn_sclass_cat, /*
+		*/ mat_educ_cat, partn_educ_cat, smoke_preg, drink_preg, EPDS_perinatal, EPDS_postnatal, diff_score_cat)
+		count
+		
+		foreach variable in /*
+		*/ sex childethnicity gestationalage matage_cat mat_sclass_cat partn_sclass_cat /*
+		*/ mat_educ_cat partn_educ_cat smoke_preg drink_preg EPDS_perinatal EPDS_postnatal diff_score_cat /*
+		*/ WISC_total_cat WISC_verbal_cat WISC_performance_cat {
+			tab `variable' PtoM_AnyC_anytime, col chi	
+		}		
+	restore
+		
+*Table 2. Associations between maternal exposure to IPV and offspring IQ - complete-case analysis sample (n=3,153)
+
+	preserve
+		count
+		drop if kz011==2
+		count
+		keep if singleton==1
+		count	
+		drop if kz011b==2
+		count
+		drop if inlist(., wisctotaliqf8, wiscverbaliqf8, wiscperformanceiqf8, /*
+		*/ PtoM_EC_pre_or_perinatal, PtoM_EC_postnatal, PtoM_PC_pre_or_perinatal, PtoM_PC_postnatal)
+		count
+		
+		drop if inlist(., sex, childethnicity, gestationalage, matage_cat, mat_sclass_cat, partn_sclass_cat, /*
+		*/ mat_educ_cat, partn_educ_cat, smoke_preg, drink_preg, EPDS_perinatal, EPDS_postnatal, diff_score_cat)
+		count	
+		
+		local confounders = "i.childethnicity ib2.matage_cat i.mat_educ_cat i.partn_educ_cat i.mat_sclass_cat i.partn_sclass_cat i.diff_score_cat i.smoke_preg i.drink_preg EPDS_perinatal EPDS_postnatal"
+		
+		foreach exposure in PtoM_AnyC_anytime PtoM_EC_anytime PtoM_PC_anytime {
+		
+			foreach type in total verbal performance {
+				regress wisc`type'iqf8 i.`exposure'
+				regress wisc`type'iqf8 i.`exposure' `confounders'
+				logistic WISC_`type'_cat i.`exposure', or	
+				logistic WISC_`type'_cat i.`exposure' `confounders', or	
+
+			}
+		}
+	restore
+		
+*Table 3. Associations between timing of physical IPV and offspring IQ - complete-case analysis sample (n=3,153)
+		
+	preserve
+		count
+		drop if kz011==2
+		count
+		keep if singleton==1
+		count	
+		drop if kz011b==2
+		count
+		drop if inlist(., wisctotaliqf8, wiscverbaliqf8, wiscperformanceiqf8, /*
+		*/ PtoM_EC_pre_or_perinatal, PtoM_EC_postnatal, PtoM_PC_pre_or_perinatal, PtoM_PC_postnatal)
+		count
+		
+		drop if inlist(., sex, childethnicity, gestationalage, matage_cat, mat_sclass_cat, partn_sclass_cat, /*
+		*/ mat_educ_cat, partn_educ_cat, smoke_preg, drink_preg, EPDS_perinatal, EPDS_postnatal, diff_score_cat)
+		count	
+		
+		local confounders = "i.childethnicity ib2.matage_cat i.mat_educ_cat i.partn_educ_cat i.mat_sclass_cat i.partn_sclass_cat i.diff_score_cat i.smoke_preg i.drink_preg EPDS_perinatal EPDS_postnatal"
+
+		tab PtoM_PC_pre_or_perinatal PtoM_PC_postnatal
+		
+		gen PtoM_PC_timed=.
+		replace PtoM_PC_timed=0 if PtoM_PC_pre_or_perinatal==0 & PtoM_PC_postnatal==0
+		replace PtoM_PC_timed=1 if PtoM_PC_pre_or_perinatal==1 & PtoM_PC_postnatal==0
+		replace PtoM_PC_timed=2 if PtoM_PC_pre_or_perinatal==0 & PtoM_PC_postnatal==1
+		replace PtoM_PC_timed=3 if PtoM_PC_pre_or_perinatal==1 & PtoM_PC_postnatal==1
+		
+		tab PtoM_PC_timed
+		
+			foreach type in total verbal performance {
+			
+			regress wisc`type'iqf8 ib0.PtoM_PC_timed
+			regress wisc`type'iqf8 ib0.PtoM_PC_timed `confounders'
+			logistic WISC_`type'_cat ib0.PtoM_PC_timed, or
+			logistic WISC_`type'_cat ib0.PtoM_PC_timed `confounders', or
+			tab WISC_`type'_cat PtoM_PC_timed if e(sample)
+			
+			}
+		
+	restore
+	
+*Table S2. Associations between maternal exposure to IPV and offspring IQ - complete-case analysis sample (n=3,153)
+
+	preserve
+		count
+		drop if kz011==2
+		count
+		keep if singleton==1
+		count	
+		drop if kz011b==2
+		count
+		drop if inlist(., wisctotaliqf8, wiscverbaliqf8, wiscperformanceiqf8, /*
+		*/ PtoM_EC_pre_or_perinatal, PtoM_EC_postnatal, PtoM_PC_pre_or_perinatal, PtoM_PC_postnatal)
+		count
+		
+		drop if inlist(., sex, childethnicity, gestationalage, matage_cat, mat_sclass_cat, partn_sclass_cat, /*
+		*/ mat_educ_cat, partn_educ_cat, smoke_preg, drink_preg, EPDS_perinatal, EPDS_postnatal, diff_score_cat)
+		count	
+		
+		drop if inlist(1, /*
+		*/ PtoC_EC_8mnth, /*
+		*/ PtoC_PC_8mnth, /*
+		*/ PtoC_EC_21mnth, /*
+		*/ PtoC_PC_21mnth, /*
+		*/ PtoC_EC_33mnth, /*
+		*/ PtoC_PC_33mnth, /*
+		*/ PtoC_EC_47mnth, /*
+		*/ PtoC_PC_47mnth, /*
+		*/ PtoC_EC_61mnth, /*
+		*/ PtoC_PC_61mnth, /*
+		*/ PtoC_EC_73mnth, /*
+		*/ PtoC_PC_73mnth)
+		
+		count
+		
+		tab PtoM_AnyC_anytime
+		tab PtoM_EC_anytime
+		tab PtoM_PC_anytime
+		
+		local confounders = "i.childethnicity ib2.matage_cat i.mat_educ_cat i.partn_educ_cat i.mat_sclass_cat i.partn_sclass_cat i.diff_score_cat i.smoke_preg i.drink_preg EPDS_perinatal EPDS_postnatal"
+		
+		foreach exposure in PtoM_AnyC_anytime PtoM_EC_anytime PtoM_PC_anytime {
+		
+			foreach type in total verbal performance {
+				regress wisc`type'iqf8 i.`exposure'
+				regress wisc`type'iqf8 i.`exposure' `confounders'
+				logistic WISC_`type'_cat i.`exposure', or	
+				logistic WISC_`type'_cat i.`exposure' `confounders', or	
+
+			}
+		}
+	restore
+	
+*IMPUTATION OF MISSING COVARIATE VALUES FOR THOSE COMPLETE ON EXPOSURE AND OUTCOME:
+		
+	preserve
+		count
+		drop if kz011==2
+		count
+		keep if singleton==1
+		count	
+		drop if kz011b==2
+		count
+		drop if inlist(., wisctotaliqf8, wiscverbaliqf8, wiscperformanceiqf8, /*
+		*/ PtoM_EC_pre_or_perinatal, PtoM_EC_postnatal, PtoM_PC_pre_or_perinatal, PtoM_PC_postnatal)
+		count		
+		
+		mi set mlong
+		
+		mi misstable summ matage_cat smoke_preg drink_preg EPDS_perinatal EPDS_postnatal /*
+		*/ childethnicity mat_sclass_cat partn_sclass_cat mat_educ_cat partn_educ_cat diff_score_cat 
+		
+		mi misstable patterns matage_cat smoke_preg drink_preg EPDS_perinatal EPDS_postnatal /*
+		*/ childethnicity mat_sclass_cat partn_sclass_cat mat_educ_cat partn_educ_cat diff_score_cat 
+		
+		ice /*
+		*/ sex gestationalage matage_cat smoke_preg drink_preg EPDS_perinatal EPDS_postnatal /*
+		*/ childethnicity mat_sclass_cat partn_sclass_cat mat_educ_cat partn_educ_cat diff_score_cat /*
+		*/ PtoM_EC_pre_or_perinatal PtoM_EC_postnatal PtoM_PC_pre_or_perinatal PtoM_PC_postnatal /*
+		*/ wisctotaliqf8 wiscverbaliqf8 wiscperformanceiqf8,  ///	
+		gen(_m) saving(O:\Desktop\Temp\imputation_data.dta, replace) m(100) cycles(10) seed(12345) /*
+		*/ cmd(childethnicity gestationalage mat_sclass_cat partn_sclass_cat mat_educ_cat partn_educ_cat diff_score_cat: mlogit, /*
+		*/ smoke_preg drink_preg EPDS_perinatal EPDS_postnatal sex: logit)  						
+	restore
+			  		   
+*IMPORT IMPUTED DATASET AND CODE EXPOSURE VARIABLES FOR ANALYSIS OF THOSE COMPLETE ON OUTCOME
+
+	use "O:\Desktop\Temp\imputation_data.dta", clear
+
+	mi import ice, imputed(sex gestationalage matage_cat smoke_preg drink_preg EPDS_perinatal EPDS_postnatal /*
+	*/ childethnicity mat_sclass_cat partn_sclass_cat mat_educ_cat partn_educ_cat diff_score_cat/*
+	*/ wisctotaliqf8 wiscverbaliqf8 wiscperformanceiqf8)
+	
+	keep idno PtoM_AnyC_anytime PtoM_AnyC_pre_or_perinatal PtoM_AnyC_postnatal /*
+	*/ PtoM_EC_anytime PtoM_EC_pre_or_perinatal PtoM_EC_postnatal /*
+	*/ PtoM_PC_anytime PtoM_PC_pre_or_perinatal PtoM_PC_postnatal /*
+	*/ sex gestationalage matage_cat smoke_preg drink_preg EPDS_perinatal EPDS_postnatal /*
+	*/ childethnicity mat_sclass_cat partn_sclass_cat mat_educ_cat partn_educ_cat diff_score_cat/*
+	*/ wisctotaliqf8 wiscverbaliqf8 wiscperformanceiqf8 /*
+	*/ WISC_total_cat WISC_verbal_cat WISC_performance_cat /*
+	*/ ParentToChild /*
+	*/ _m*
+	
+	
+		*Table 1. Characteristics of the sample by exposure status - multiple-imputation dataset (n=3,997)
+
+			mi estimate: proportion PtoM_AnyC_anytime
+			
+			foreach variable in /*
+			*/ childethnicity matage_cat mat_sclass_cat partn_sclass_cat /*
+			*/ mat_educ_cat partn_educ_cat smoke_preg drink_preg EPDS_perinatal EPDS_postnatal diff_score_cat /*
+			*/ WISC_total_cat WISC_verbal_cat WISC_performance_cat {
+					
+					mi estimate: proportion `variable', over(PtoM_AnyC_anytime)	
+			}		
+	
+		*Table S3. Associations between maternal exposure to IPV and offspring IQ - multiple-imputation analysis sample (n=3,997)
+
+		
+			log using "\\ads.bris.ac.uk\filestore\BRMS\Studies\ASDoutcomes\Hein\Projects\IPV offspring intelligence - ALSPAC\logs\Table 2 imputed data.txt", text replace
+		
+			foreach exposure in PtoM_AnyC_anytime PtoM_EC_anytime PtoM_PC_anytime {
+			
+				foreach type in total verbal performance {
+					mi estimate: regress wisc`type'iqf8 i.`exposure'
+					mi estimate: regress wisc`type'iqf8 i.`exposure' `confounders'
+					mi estimate, or: logistic WISC_`type'_cat i.`exposure', or	
+					mi estimate, or: logistic WISC_`type'_cat i.`exposure' `confounders', or	
+					mi estimate: proportion `exposure'
+					mi estimate: proportion `exposure', over(WISC_`type'_cat)
+				}
+			}
+			
+			
+			log close
+			
+		*Table S5: Associations between timing of physical IPV and offspring IQ - multiple-imputation analysis sample(n=3,997)
+
+			mi passive: gen PtoM_PC_timed=.
+			mi passive: replace PtoM_PC_timed=0 if PtoM_PC_pre_or_perinatal==0 & PtoM_PC_postnatal==0
+			mi passive: replace PtoM_PC_timed=1 if PtoM_PC_pre_or_perinatal==1 & PtoM_PC_postnatal==0
+			mi passive: replace PtoM_PC_timed=2 if PtoM_PC_pre_or_perinatal==0 & PtoM_PC_postnatal==1
+			mi passive: replace PtoM_PC_timed=3 if PtoM_PC_pre_or_perinatal==1 & PtoM_PC_postnatal==1
+		
+				local confounders = "i.childethnicity ib2.matage_cat i.mat_educ_cat i.partn_educ_cat i.mat_sclass_cat i.partn_sclass_cat i.diff_score_cat i.smoke_preg i.drink_preg EPDS_perinatal EPDS_postnatal"
+				foreach type in total verbal performance {
+				
+				mi estimate: regress wisc`type'iqf8 ib0.PtoM_PC_timed 
+				mi estimate: regress wisc`type'iqf8 ib0.PtoM_PC_timed `confounders'
+				mi estimate, or: logistic WISC_`type'_cat ib0.PtoM_PC_timed 
+				mi estimate, or: logistic WISC_`type'_cat ib0.PtoM_PC_timed `confounders'
+				mi estimate: proportion PtoM_PC_timed
+				}
+						
+
